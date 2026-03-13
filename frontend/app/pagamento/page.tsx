@@ -16,6 +16,8 @@ function PagamentoContent() {
   const [tempo, setTempo] = useState(900);
 
   function copiarPix() {
+    if (!codigo) return;
+
     navigator.clipboard.writeText(codigo);
 
     setCopiado(true);
@@ -32,7 +34,6 @@ function PagamentoContent() {
           clearInterval(intervalo);
           return 0;
         }
-
         return t - 1;
       });
     }, 1000);
@@ -40,7 +41,7 @@ function PagamentoContent() {
     return () => clearInterval(intervalo);
   }, []);
 
-  // 🔎 VERIFICAR PAGAMENTO AUTOMATICAMENTE
+  // verificar pagamento
   useEffect(() => {
     if (!pedidoId) return;
 
@@ -53,7 +54,6 @@ function PagamentoContent() {
         const data = await res.json();
 
         if (data.status === "paid") {
-          alert("Pagamento confirmado!");
           router.push("/sucesso");
         }
       } catch (err) {
@@ -62,7 +62,7 @@ function PagamentoContent() {
     }, 5000);
 
     return () => clearInterval(intervalo);
-  }, [pedidoId]);
+  }, [pedidoId, router]);
 
   const minutos = Math.floor(tempo / 60);
   const segundos = tempo % 60;
@@ -102,20 +102,11 @@ function PagamentoContent() {
               codigo
             )}`}
             alt="QR Code PIX"
-            style={{
-              width: 260,
-              marginBottom: 20,
-            }}
+            style={{ width: 260, marginBottom: 20 }}
           />
         )}
 
-        <div
-          style={{
-            fontSize: 14,
-            color: "#555",
-            marginBottom: 10,
-          }}
-        >
+        <div style={{ fontSize: 14, color: "#555", marginBottom: 10 }}>
           Tempo restante: {minutos}:{segundos.toString().padStart(2, "0")}
         </div>
 
@@ -155,13 +146,7 @@ function PagamentoContent() {
           {copiado ? "✔ PIX copiado!" : "Copiar código PIX"}
         </button>
 
-        <div
-          style={{
-            marginTop: 20,
-            fontSize: 13,
-            color: "#666",
-          }}
-        >
+        <div style={{ marginTop: 20, fontSize: 13, color: "#666" }}>
           🔒 Pagamento 100% seguro <br />
           ⚡ Confirmação automática
         </div>
