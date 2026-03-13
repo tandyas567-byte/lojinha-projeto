@@ -1,202 +1,179 @@
-"use client"
+"use client";
 
-import { useSearchParams } from "next/navigation"
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
-export default function Pagamento(){
+function PagamentoContent() {
+  const params = useSearchParams();
+  const router = useRouter();
 
-const params = useSearchParams()
-const router = useRouter()
+  const codigoParam = params.get("codigo");
+  const pedidoId = params.get("pedido");
 
-const codigoParam = params.get("codigo")
-const pedidoId = params.get("pedido")
+  const codigo = codigoParam ? decodeURIComponent(codigoParam) : "";
 
-const codigo = codigoParam ? decodeURIComponent(codigoParam) : ""
+  const [copiado, setCopiado] = useState(false);
+  const [tempo, setTempo] = useState(900);
 
-const [copiado,setCopiado] = useState(false)
-const [tempo,setTempo] = useState(900)
+  function copiarPix() {
+    navigator.clipboard.writeText(codigo);
 
-function copiarPix(){
+    setCopiado(true);
 
-navigator.clipboard.writeText(codigo)
-
-setCopiado(true)
-
-setTimeout(()=>{
-setCopiado(false)
-},2000)
-
-}
-
-useEffect(()=>{
-
-const intervalo = setInterval(()=>{
-
-setTempo((t)=>{
-
-if(t <= 1){
-clearInterval(intervalo)
-return 0
-}
-
-return t - 1
-
-})
-
-},1000)
-
-return ()=> clearInterval(intervalo)
-
-},[])
-
-
-// 🔎 VERIFICAR PAGAMENTO AUTOMATICAMENTE
-useEffect(()=>{
-
-if(!pedidoId) return
-
-const intervalo = setInterval(async()=>{
-
- try{
-
-  const res = await fetch(`http://localhost:5000/pedido/${pedidoId}/status`)
-  const data = await res.json()
-
-  if(data.status === "paid"){
-
-   alert("Pagamento confirmado!")
-
-   router.push("/sucesso")
-
+    setTimeout(() => {
+      setCopiado(false);
+    }, 2000);
   }
 
- }catch(err){
-  console.log("Erro verificar pagamento")
- }
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      setTempo((t) => {
+        if (t <= 1) {
+          clearInterval(intervalo);
+          return 0;
+        }
 
-},5000)
+        return t - 1;
+      });
+    }, 1000);
 
-return ()=> clearInterval(intervalo)
+    return () => clearInterval(intervalo);
+  }, []);
 
-},[pedidoId])
+  // 🔎 VERIFICAR PAGAMENTO AUTOMATICAMENTE
+  useEffect(() => {
+    if (!pedidoId) return;
 
+    const intervalo = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/pedido/${pedidoId}/status`
+        );
 
-const minutos = Math.floor(tempo/60)
-const segundos = tempo % 60
+        const data = await res.json();
 
-return(
+        if (data.status === "paid") {
+          alert("Pagamento confirmado!");
+          router.push("/sucesso");
+        }
+      } catch (err) {
+        console.log("Erro verificar pagamento");
+      }
+    }, 5000);
 
-<div style={{
+    return () => clearInterval(intervalo);
+  }, [pedidoId]);
 
-display:"flex",
-flexDirection:"column",
-alignItems:"center",
-justifyContent:"center",
-minHeight:"100vh",
-background:"#f3f4f6",
-fontFamily:"Arial"
+  const minutos = Math.floor(tempo / 60);
+  const segundos = tempo % 60;
 
-}}>
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+        background: "#f3f4f6",
+        fontFamily: "Arial",
+      }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          padding: 40,
+          borderRadius: 10,
+          boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
+          maxWidth: 500,
+          width: "100%",
+          textAlign: "center",
+        }}
+      >
+        <h1 style={{ marginBottom: 10 }}>Pagamento via PIX</h1>
 
-<div style={{
+        <p style={{ color: "#666", marginBottom: 20 }}>
+          Escaneie o QR Code abaixo para pagar
+        </p>
 
-background:"#fff",
-padding:40,
-borderRadius:10,
-boxShadow:"0 5px 20px rgba(0,0,0,0.1)",
-maxWidth:500,
-width:"100%",
-textAlign:"center"
+        {codigo && (
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
+              codigo
+            )}`}
+            alt="QR Code PIX"
+            style={{
+              width: 260,
+              marginBottom: 20,
+            }}
+          />
+        )}
 
-}}>
+        <div
+          style={{
+            fontSize: 14,
+            color: "#555",
+            marginBottom: 10,
+          }}
+        >
+          Tempo restante: {minutos}:{segundos.toString().padStart(2, "0")}
+        </div>
 
-<h1 style={{marginBottom:10}}>Pagamento via PIX</h1>
+        <p style={{ marginBottom: 10 }}>Ou copie o código PIX</p>
 
-<p style={{color:"#666",marginBottom:20}}>
-Escaneie o QR Code abaixo para pagar
-</p>
+        <textarea
+          value={codigo}
+          readOnly
+          onClick={copiarPix}
+          style={{
+            width: "100%",
+            height: 110,
+            padding: 10,
+            borderRadius: 6,
+            border: "1px solid #ddd",
+            fontSize: 12,
+            cursor: "pointer",
+            resize: "none",
+          }}
+        />
 
-{codigo && (
+        <button
+          onClick={copiarPix}
+          style={{
+            marginTop: 15,
+            width: "100%",
+            padding: "14px",
+            background: "#16a34a",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            fontSize: 16,
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          {copiado ? "✔ PIX copiado!" : "Copiar código PIX"}
+        </button>
 
-<img
-src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(codigo)}`}
-alt="QR Code PIX"
-style={{
-width:260,
-marginBottom:20
-}}
-/>
+        <div
+          style={{
+            marginTop: 20,
+            fontSize: 13,
+            color: "#666",
+          }}
+        >
+          🔒 Pagamento 100% seguro <br />
+          ⚡ Confirmação automática
+        </div>
+      </div>
+    </div>
+  );
+}
 
-)}
-
-<div style={{
-fontSize:14,
-color:"#555",
-marginBottom:10
-}}>
-
-Tempo restante: {minutos}:{segundos.toString().padStart(2,"0")}
-
-</div>
-
-<p style={{marginBottom:10}}>Ou copie o código PIX</p>
-
-<textarea
-value={codigo}
-readOnly
-onClick={copiarPix}
-style={{
-
-width:"100%",
-height:110,
-padding:10,
-borderRadius:6,
-border:"1px solid #ddd",
-fontSize:12,
-cursor:"pointer",
-resize:"none"
-
-}}
-/>
-
-<button
-onClick={copiarPix}
-style={{
-
-marginTop:15,
-width:"100%",
-padding:"14px",
-background:"#16a34a",
-color:"#fff",
-border:"none",
-borderRadius:6,
-fontSize:16,
-fontWeight:"bold",
-cursor:"pointer"
-
-}}
->
-
-{copiado ? "✔ PIX copiado!" : "Copiar código PIX"}
-
-</button>
-
-<div style={{
-marginTop:20,
-fontSize:13,
-color:"#666"
-}}>
-
-🔒 Pagamento 100% seguro <br/>
-⚡ Confirmação automática
-
-</div>
-
-</div>
-
-</div>
-
-)
-
+export default function Pagamento() {
+  return (
+    <Suspense fallback={<div>Carregando pagamento...</div>}>
+      <PagamentoContent />
+    </Suspense>
+  );
 }
